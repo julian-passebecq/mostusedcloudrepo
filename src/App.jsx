@@ -164,6 +164,7 @@ function App() {
   const [repos, setRepos] = useState([])
   const [status, setStatus] = useState('loading')
   const [source, setSource] = useState('live')
+  const [retryNonce, setRetryNonce] = useState(0)
   const requestCounter = useRef(0)
 
   const codeTechnologies = TECHNOLOGIES.filter((item) => item.group === 'code')
@@ -182,19 +183,32 @@ function App() {
     const requestId = ++requestCounter.current
     setStatus('loading')
 
-    searchRepositories({ query, sort: selectedSort.apiSort, signal: controller.signal })
-      .then((result) => {
-        if (requestId !== requestCounter.current) return
-        setRepos(result.items)
-        setSource(result.source)
-        setStatus('ready')
+    // Small debounce avoids spending GitHub Search requests while someone rapidly clicks filters.
+    const timer = setTimeout(() => {
+      searchRepositories({
+        query,
+        sort: selectedSort.apiSort,
+        signal: controller.signal,
+        technologyId: technology,
+        contentTypeId: contentType,
+        searchText,
       })
-      .catch((error) => {
-        if (error.name !== 'AbortError' && requestId === requestCounter.current) setStatus('error')
-      })
+        .then((result) => {
+          if (requestId !== requestCounter.current) return
+          setRepos(result.items)
+          setSource(result.source)
+          setStatus('ready')
+        })
+        .catch((error) => {
+          if (error.name !== 'AbortError' && requestId === requestCounter.current) setStatus('error')
+        })
+    }, 280)
 
-    return () => controller.abort()
-  }, [query, selectedSort.apiSort])
+    return () => {
+      clearTimeout(timer)
+      controller.abort()
+    }
+  }, [query, selectedSort.apiSort, technology, contentType, searchText, retryNonce])
 
   function submitSearch(event) {
     event.preventDefault()
@@ -221,7 +235,7 @@ function App() {
           <div>
             <span className="hero-kicker">Modern GitHub discovery</span>
             <h1>Find the repositories that matter for modern data work.</h1>
-            <p>Filter GitHub by content type, language or platform, then compare popularity and activity without digging through generic search results.</p>
+            <p>Filter GitHub by content type, language, data library or platform, then compare popularity and activity without digging through generic search results.</p>
           </div>
           <div className="hero-note">
             <Database size={20} />
@@ -266,10 +280,10 @@ function App() {
               <span>2</span>
               <div>
                 <strong>Technology</strong>
-                <small>Two rows: code/query languages, then platforms/services</small>
+                <small>Two rows: code/query/data libraries, then platforms/services</small>
               </div>
             </div>
-            <TechnologyRow label="Code & query" items={codeTechnologies} activeId={technology} onSelect={setTechnology} />
+            <TechnologyRow label="Code, query & libraries" items={codeTechnologies} activeId={technology} onSelect={setTechnology} />
             <TechnologyRow label="Platforms & services" items={serviceTechnologies} activeId={technology} onSelect={setTechnology} />
           </div>
 
@@ -307,7 +321,10 @@ function App() {
 
         {source === 'demo' && status === 'ready' && (
           <div className="notice" role="status">
-            GitHub search is temporarily unavailable or rate-limited. Showing an illustrative fallback set; metrics may not be current.
+            GitHub search is temporarily unavailable or rate-limited. Showing a technology-aware illustrative fallback set; metrics may not be current.{' '}
+            <button type="button" className="source-link" onClick={() => setRetryNonce((value) => value + 1)}>
+              Retry live data <RefreshCw size={13} />
+            </button>
           </div>
         )}
 
@@ -315,6 +332,8 @@ function App() {
           <div className="loading-state"><RefreshCw size={20} className="spin" /> Loading GitHub repositories…</div>
         ) : status === 'error' ? (
           <div className="empty-state">Could not load repositories. Change a filter to retry.</div>
+        ) : repos.length === 0 ? (
+          <div className="empty-state">No repositories matched this combination. Try a broader content type or remove the extra keyword.</div>
         ) : (
           <>
             <PopularityChart repos={repos} />
