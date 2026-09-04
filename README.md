@@ -15,9 +15,11 @@ This repository was rebuilt from the old StarryLines backend snapshot. The previ
 - Templates
 - Learning
 
-**Code & query**
+**Code, query & libraries**
 - Python
 - PySpark
+- Pandas
+- scikit-learn
 - PowerShell
 - SQL
 
@@ -27,22 +29,24 @@ This repository was rebuilt from the old StarryLines backend snapshot. The previ
 - SQL Server
 - Databricks
 
-The app queries GitHub's public repository search API, caches query results in the browser for 15 minutes, and falls back to an illustrative local data set if GitHub is unavailable or rate-limited.
+The app queries GitHub's public repository search API, caches query results in the browser for 15 minutes, debounces rapid filter changes, and falls back to a technology-aware illustrative data set if GitHub is unavailable or rate-limited.
 
 > GitHub does not publish a literal repository usage metric. Stars, forks and recent activity are used as discovery/ranking signals instead.
 
 ## Stack
 
-- React 19
-- Vite
-- D3
+- React 19.2
+- Vite 8
+- D3 7
 - Lucide icons
-- Vitest
-- GitHub REST API
+- Vitest 5
+- GitHub REST API `2026-03-10`
 
 No application backend or database is required.
 
 ## Run locally
+
+Requires Node.js 20.19+ (Node 22 recommended).
 
 ```bash
 npm install
@@ -64,7 +68,7 @@ Connect the repository. `netlify.toml` already defines:
 
 - Build command: `npm run build`
 - Publish directory: `dist`
-- Node: 20
+- Node: 22
 
 ### Vercel
 
@@ -76,7 +80,9 @@ Use Vite defaults:
 
 ## API limits
 
-The public GitHub Search API is rate-limited. This app deliberately makes one request per filter state, cancels stale requests, caches successful responses, and has a no-secret fallback mode. For a high-traffic production application, move GitHub authentication to a server-side function or GitHub App; do not expose a personal access token in Vite client code.
+GitHub Search has its own restrictive rate bucket. This app deliberately debounces rapid filter changes, cancels stale requests, caches successful responses, and has a no-secret fallback mode. The fallback is filtered by the selected technology so a Power BI outage does not suddenly display unrelated Airflow repositories.
+
+For a high-traffic production application, move GitHub authentication to a server-side function or GitHub App; do not expose a personal access token in Vite client code.
 
 ## Attribution
 
