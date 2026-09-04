@@ -1,0 +1,26 @@
+name: Update blacklist
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "00 9 * * *"
+
+jobs:
+  update-blacklist:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+      - working-directory: ./src/utils
+        env:
+          MONGO_USER: ${{ secrets.MONGO_USER }}
+          MONGO_SECRET: ${{ secrets.MONGO_SECRET }}
+          MONGO_DATABASE: ${{ secrets.MONGO_DATABASE }}
+          MONGO_CLUSTER: ${{ secrets.MONGO_CLUSTER }}
+        run: |
+          python3 -m pip install --upgrade pip
+          pip install -r requirements.txt
+          python3 blacklist_by_word.py
+          python3 blacklist_by_size.py
