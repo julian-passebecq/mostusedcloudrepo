@@ -8,6 +8,7 @@ import {
   Database,
   ExternalLink,
   GitFork,
+  Hash,
   Layers3,
   RefreshCw,
   Search,
@@ -19,6 +20,7 @@ import {
   CONTENT_TYPES,
   SORT_OPTIONS,
   TECHNOLOGIES,
+  TOPIC_FILTERS,
   buildSearchQuery,
   searchRepositories,
 } from './lib/github.js'
@@ -64,12 +66,37 @@ function TechnologyRow({ label, items, activeId, onSelect }) {
               className={`tech-tile ${activeId === item.id ? 'active' : ''}`}
               onClick={() => onSelect(item.id)}
               aria-pressed={activeId === item.id}
+              title={item.label}
             >
-              <span className="tech-glyph">{item.short}</span>
+              <span className="tech-logo-shell">
+                <img className={`tech-logo logo-${item.id}`} src={item.icon} alt="" aria-hidden="true" decoding="async" />
+              </span>
               <span className="tech-name">{item.label}</span>
             </button>
           ))}
         </div>
+      </div>
+    </div>
+  )
+}
+
+function TopicFilterRow({ activeId, onSelect }) {
+  return (
+    <div className="topic-lane">
+      <div className="lane-label"><Hash size={12} /> Category</div>
+      <div className="topic-tags" role="list" aria-label="Repository topic filter">
+        {TOPIC_FILTERS.map((item) => (
+          <button
+            type="button"
+            key={item.id}
+            className={activeId === item.id ? 'active' : ''}
+            onClick={() => onSelect(item.id)}
+            aria-pressed={activeId === item.id}
+            title={item.hint}
+          >
+            {item.label}
+          </button>
+        ))}
       </div>
     </div>
   )
@@ -159,14 +186,13 @@ function RepoTable({ repos, sort }) {
           <tbody>
             {repos.map((repo, index) => {
               const key = repo.id ?? repo.full_name
-              const isExpanded = expanded === key
               return (
                 <FragmentRow
                   key={key}
                   repo={repo}
                   rank={index + 1}
                   sort={sort}
-                  expanded={isExpanded}
+                  expanded={expanded === key}
                   onToggle={() => toggle(repo)}
                 />
               )
@@ -242,6 +268,7 @@ function FragmentRow({ repo, rank, sort, expanded, onToggle }) {
 function App() {
   const [contentType, setContentType] = useState('all')
   const [technology, setTechnology] = useState('python')
+  const [topic, setTopic] = useState('all')
   const [sort, setSort] = useState('stars')
   const [searchDraft, setSearchDraft] = useState('')
   const [searchText, setSearchText] = useState('')
@@ -256,11 +283,12 @@ function App() {
   const serviceTechnologies = TECHNOLOGIES.filter((item) => item.group === 'service')
   const selectedTechnology = TECHNOLOGIES.find((item) => item.id === technology)
   const selectedContentType = CONTENT_TYPES.find((item) => item.id === contentType)
+  const selectedTopic = TOPIC_FILTERS.find((item) => item.id === topic)
   const selectedSort = SORT_OPTIONS.find((item) => item.id === sort)
 
   const query = useMemo(
-    () => buildSearchQuery({ technologyId: technology, contentTypeId: contentType, searchText }),
-    [technology, contentType, searchText],
+    () => buildSearchQuery({ technologyId: technology, contentTypeId: contentType, topicId: topic, searchText }),
+    [technology, contentType, topic, searchText],
   )
 
   useEffect(() => {
@@ -275,6 +303,7 @@ function App() {
         signal: controller.signal,
         technologyId: technology,
         contentTypeId: contentType,
+        topicId: topic,
         searchText,
       })
         .then((result) => {
@@ -292,7 +321,7 @@ function App() {
       clearTimeout(timer)
       controller.abort()
     }
-  }, [query, selectedSort.apiSort, technology, contentType, searchText, retryNonce])
+  }, [query, selectedSort.apiSort, technology, contentType, topic, searchText, retryNonce])
 
   function submitSearch(event) {
     event.preventDefault()
@@ -348,13 +377,17 @@ function App() {
 
           <TechnologyRow label="Code, query & libraries" items={codeTechnologies} activeId={technology} onSelect={setTechnology} />
           <TechnologyRow label="Platforms & services" items={serviceTechnologies} activeId={technology} onSelect={setTechnology} />
+          <TopicFilterRow activeId={topic} onSelect={setTopic} />
         </section>
 
         <section className="result-toolbar">
           <div className="current-selection">
             <span className="mini-label">Selected ranking</span>
-            <h1>{selectedTechnology.label} <span>·</span> {selectedContentType.label}</h1>
-            <p>{searchText ? `Extra filter: “${searchText}”` : selectedContentType.hint}</p>
+            <h1>
+              {selectedTechnology.label} <span>·</span> {selectedContentType.label}
+              {topic !== 'all' && <><span> · </span>{selectedTopic.label}</>}
+            </h1>
+            <p>{searchText ? `Extra filter: “${searchText}”` : selectedTopic.hint}</p>
           </div>
           <div className="tools-row">
             <form className="search-box" onSubmit={submitSearch}>
@@ -381,7 +414,7 @@ function App() {
 
         {source === 'demo' && status === 'ready' && (
           <div className="notice" role="status">
-            GitHub search is unavailable or rate-limited. Showing a technology-aware fallback set; metrics may not be current.
+            GitHub search is unavailable or rate-limited. Showing a filter-aware fallback set; metrics may not be current.
             <button type="button" onClick={() => setRetryNonce((value) => value + 1)}>
               <RefreshCw size={13} /> Retry live data
             </button>
@@ -393,7 +426,7 @@ function App() {
         ) : status === 'error' ? (
           <div className="state-box">Could not load repositories. Change a filter to retry.</div>
         ) : repos.length === 0 ? (
-          <div className="state-box">No repositories matched this combination. Broaden the content type or remove the extra keyword.</div>
+          <div className="state-box">No repositories matched this combination. Try All topics or broaden the content type.</div>
         ) : (
           <>
             <div className="table-meta">
@@ -408,7 +441,7 @@ function App() {
 
       <footer className="site-footer">
         <span>React + Vite + D3 · GitHub REST API</span>
-        <span>Visual direction based on the original StarryLines ranked-table interface</span>
+        <span>Local SVG technology marks · no image CDN dependency</span>
       </footer>
     </div>
   )

@@ -9,16 +9,29 @@ export const CONTENT_TYPES = [
 ]
 
 export const TECHNOLOGIES = [
-  { id: 'python', label: 'Python', short: 'PY', group: 'code', query: 'language:Python' },
-  { id: 'pyspark', label: 'PySpark', short: 'SP', group: 'code', query: 'pyspark in:name,description,readme' },
-  { id: 'pandas', label: 'Pandas', short: 'PD', group: 'code', query: 'pandas in:name,description,readme language:Python' },
-  { id: 'sklearn', label: 'scikit-learn', short: 'SK', group: 'code', query: 'scikit-learn in:name,description,readme language:Python' },
-  { id: 'powershell', label: 'PowerShell', short: 'PS', group: 'code', query: 'language:PowerShell' },
-  { id: 'sql', label: 'SQL', short: 'SQL', group: 'code', query: 'sql in:name,description,readme' },
-  { id: 'powerbi', label: 'Power BI', short: 'BI', group: 'service', query: 'power bi in:name,description,readme' },
-  { id: 'fabric', label: 'Microsoft Fabric', short: 'MF', group: 'service', query: 'microsoft fabric in:name,description,readme' },
-  { id: 'sqlserver', label: 'SQL Server', short: 'SS', group: 'service', query: 'sql server in:name,description,readme' },
-  { id: 'databricks', label: 'Databricks', short: 'DB', group: 'service', query: 'databricks in:name,description,readme' },
+  { id: 'python', label: 'Python', short: 'PY', icon: '/tech/python.svg', group: 'code', query: 'language:Python' },
+  { id: 'pyspark', label: 'PySpark', short: 'SP', icon: '/tech/spark.svg', group: 'code', query: 'pyspark in:name,description,readme' },
+  { id: 'pandas', label: 'Pandas', short: 'PD', icon: '/tech/pandas.svg', group: 'code', query: 'pandas in:name,description,readme language:Python' },
+  { id: 'sklearn', label: 'scikit-learn', short: 'SK', icon: '/tech/scikit-learn.svg', group: 'code', query: 'scikit-learn in:name,description,readme language:Python' },
+  { id: 'powershell', label: 'PowerShell', short: 'PS', icon: '/tech/powershell.svg', group: 'code', query: 'language:PowerShell' },
+  { id: 'sql', label: 'SQL', short: 'SQL', icon: '/tech/sql.svg', group: 'code', query: 'sql in:name,description,readme' },
+  { id: 'powerbi', label: 'Power BI', short: 'BI', icon: '/tech/power-bi.svg', group: 'service', query: 'power bi in:name,description,readme' },
+  { id: 'fabric', label: 'Microsoft Fabric', short: 'MF', icon: '/tech/fabric.svg', group: 'service', query: 'microsoft fabric in:name,description,readme' },
+  { id: 'sqlserver', label: 'SQL Server', short: 'SS', icon: '/tech/sql-server.svg', group: 'service', query: 'sql server in:name,description,readme' },
+  { id: 'databricks', label: 'Databricks', short: 'DB', icon: '/tech/databricks.svg', group: 'service', query: 'databricks in:name,description,readme' },
+]
+
+export const TOPIC_FILTERS = [
+  { id: 'all', label: 'All topics', hint: 'Do not restrict by repository topic', query: '', aliases: [] },
+  { id: 'cloud', label: 'Cloud', hint: 'Cloud platforms, infrastructure and services', query: 'topic:cloud', aliases: ['cloud', 'azure', 'aws', 'gcp'] },
+  { id: 'data-engineering', label: 'Data Engineering', hint: 'Pipelines, orchestration and data platforms', query: 'topic:data-engineering', aliases: ['data-engineering', 'analytics-engineering', 'orchestration', 'spark', 'delta-lake'] },
+  { id: 'analytics', label: 'Analytics', hint: 'Analysis, metrics and analytics projects', query: 'topic:analytics', aliases: ['analytics', 'data-analysis', 'embedded-analytics'] },
+  { id: 'dashboard', label: 'Dashboard', hint: 'Dashboard and reporting projects', query: 'topic:dashboard', aliases: ['dashboard', 'power-bi', 'embedded-analytics', 'visualization'] },
+  { id: 'business-intelligence', label: 'BI', hint: 'Business intelligence and semantic reporting', query: 'topic:business-intelligence', aliases: ['business-intelligence', 'power-bi', 'analytics'] },
+  { id: 'machine-learning', label: 'ML / AI', hint: 'Machine learning and applied AI repositories', query: 'topic:machine-learning', aliases: ['machine-learning', 'scikit-learn', 'ml'] },
+  { id: 'etl', label: 'ETL / ELT', hint: 'Data movement and transformation pipelines', query: 'topic:etl', aliases: ['etl', 'data-transformation', 'workflow', 'orchestration'] },
+  { id: 'lakehouse', label: 'Lakehouse', hint: 'Lakehouse, Delta and modern data platform projects', query: 'topic:lakehouse', aliases: ['lakehouse', 'delta-lake', 'databricks', 'spark'] },
+  { id: 'data-visualization', label: 'Data Viz', hint: 'Data visualization libraries and examples', query: 'topic:data-visualization', aliases: ['data-visualization', 'visualization', 'dashboard'] },
 ]
 
 export const SORT_OPTIONS = [
@@ -47,7 +60,7 @@ const DEMO_REPOS = [
     language: 'Python',
     stars: 46000,
     forks: 19000,
-    topics: ['pandas', 'python', 'data-analysis'],
+    topics: ['pandas', 'python', 'data-analysis', 'analytics'],
     technologies: ['python', 'pandas'],
     contentTypes: ['projects', 'libraries'],
   },
@@ -107,7 +120,7 @@ const DEMO_REPOS = [
     language: 'TSQL',
     stars: 11000,
     forks: 5200,
-    topics: ['sql-server', 'sql', 'samples'],
+    topics: ['sql-server', 'sql', 'samples', 'data-engineering'],
     technologies: ['sql', 'sqlserver'],
     contentTypes: ['projects', 'samples', 'templates'],
   },
@@ -117,7 +130,7 @@ const DEMO_REPOS = [
     language: 'Python',
     stars: 12000,
     forks: 2100,
-    topics: ['sql', 'analytics-engineering', 'data-transformation'],
+    topics: ['sql', 'analytics-engineering', 'data-transformation', 'etl'],
     technologies: ['python', 'sql'],
     contentTypes: ['projects', 'tools'],
   },
@@ -127,7 +140,7 @@ const DEMO_REPOS = [
     language: 'Python',
     stars: 42000,
     forks: 15000,
-    topics: ['workflow', 'orchestration', 'data-engineering'],
+    topics: ['workflow', 'orchestration', 'data-engineering', 'etl'],
     technologies: ['python'],
     contentTypes: ['projects', 'tools'],
   },
@@ -137,7 +150,7 @@ const DEMO_REPOS = [
     language: 'C#',
     stars: 2300,
     forks: 1500,
-    topics: ['power-bi', 'samples', 'embedded-analytics'],
+    topics: ['power-bi', 'samples', 'embedded-analytics', 'dashboard', 'business-intelligence'],
     technologies: ['powerbi'],
     contentTypes: ['samples', 'templates'],
   },
@@ -147,7 +160,7 @@ const DEMO_REPOS = [
     language: 'Jupyter Notebook',
     stars: 2700,
     forks: 1100,
-    topics: ['microsoft-fabric', 'analytics', 'samples'],
+    topics: ['microsoft-fabric', 'analytics', 'samples', 'data-engineering', 'lakehouse'],
     technologies: ['fabric', 'pyspark', 'python'],
     contentTypes: ['samples', 'templates', 'learning'],
   },
@@ -157,7 +170,7 @@ const DEMO_REPOS = [
     language: 'Go',
     stars: 900,
     forks: 260,
-    topics: ['databricks', 'cli', 'cloud'],
+    topics: ['databricks', 'cli', 'cloud', 'lakehouse'],
     technologies: ['databricks'],
     contentTypes: ['projects', 'tools'],
   },
@@ -167,7 +180,7 @@ const DEMO_REPOS = [
     language: 'Python',
     stars: 900,
     forks: 330,
-    topics: ['databricks', 'python', 'sdk'],
+    topics: ['databricks', 'python', 'sdk', 'cloud'],
     technologies: ['databricks', 'python'],
     contentTypes: ['libraries', 'tools'],
   },
@@ -208,10 +221,11 @@ function sanitizeSearchText(value = '') {
   return String(value).trim().slice(0, MAX_SEARCH_TEXT)
 }
 
-export function buildSearchQuery({ technologyId, contentTypeId, searchText = '' }) {
+export function buildSearchQuery({ technologyId, contentTypeId, topicId = 'all', searchText = '' }) {
   const technology = TECHNOLOGIES.find((item) => item.id === technologyId) ?? TECHNOLOGIES[0]
   const contentType = CONTENT_TYPES.find((item) => item.id === contentTypeId) ?? CONTENT_TYPES[0]
-  const terms = [technology.query, contentType.query, sanitizeSearchText(searchText), 'archived:false', 'fork:false']
+  const topic = TOPIC_FILTERS.find((item) => item.id === topicId) ?? TOPIC_FILTERS[0]
+  const terms = [technology.query, contentType.query, topic.query, sanitizeSearchText(searchText), 'archived:false', 'fork:false']
   return terms.filter(Boolean).join(' ')
 }
 
@@ -240,13 +254,21 @@ function sortFallback(items, sort) {
   return copy.sort((a, b) => b.stargazers_count - a.stargazers_count)
 }
 
-export function getFallbackRepositories({ technologyId = 'python', contentTypeId = 'all', searchText = '', sort = 'stars' } = {}) {
+export function getFallbackRepositories({ technologyId = 'python', contentTypeId = 'all', topicId = 'all', searchText = '', sort = 'stars' } = {}) {
   const text = sanitizeSearchText(searchText).toLowerCase()
+  const topic = TOPIC_FILTERS.find((item) => item.id === topicId) ?? TOPIC_FILTERS[0]
   let matches = demoItems.filter((item) => item._technologies.includes(technologyId))
 
   if (contentTypeId !== 'all') {
     const byType = matches.filter((item) => item._contentTypes.includes(contentTypeId))
     if (byType.length) matches = byType
+  }
+
+  if (topic.id !== 'all') {
+    matches = matches.filter((item) => {
+      const haystack = [item.full_name, item.description, item.language, ...(item.topics || [])].join(' ').toLowerCase()
+      return topic.aliases.some((alias) => haystack.includes(alias))
+    })
   }
 
   if (text) {
@@ -294,6 +316,7 @@ export async function searchRepositories({
   signal,
   technologyId = 'python',
   contentTypeId = 'all',
+  topicId = 'all',
   searchText = '',
 }) {
   const key = getCacheKey(query, sort)
@@ -329,7 +352,7 @@ export async function searchRepositories({
     return { items, source: 'live' }
   } catch (error) {
     if (error.name === 'AbortError') throw error
-    const items = getFallbackRepositories({ technologyId, contentTypeId, searchText, sort })
+    const items = getFallbackRepositories({ technologyId, contentTypeId, topicId, searchText, sort })
     return { items, source: 'demo', error }
   }
 }

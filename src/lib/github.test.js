@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   TECHNOLOGIES,
+  TOPIC_FILTERS,
   buildSearchQuery,
   getFallbackRepositories,
   normalizeRepository,
@@ -11,6 +12,26 @@ describe('technology filters', () => {
     expect(new Set(TECHNOLOGIES.map((item) => item.group))).toEqual(new Set(['code', 'service']))
     expect(TECHNOLOGIES.some((item) => item.id === 'pandas')).toBe(true)
     expect(TECHNOLOGIES.some((item) => item.id === 'sklearn')).toBe(true)
+  })
+
+  it('provides a local SVG icon for every technology', () => {
+    TECHNOLOGIES.forEach((item) => {
+      expect(item.icon).toMatch(/^\/tech\/.+\.svg$/)
+    })
+  })
+})
+
+describe('topic filters', () => {
+  it('includes practical data, BI and cloud topics', () => {
+    const ids = new Set(TOPIC_FILTERS.map((item) => item.id))
+    expect(ids.has('cloud')).toBe(true)
+    expect(ids.has('data-engineering')).toBe(true)
+    expect(ids.has('analytics')).toBe(true)
+    expect(ids.has('dashboard')).toBe(true)
+    expect(ids.has('business-intelligence')).toBe(true)
+    expect(ids.has('machine-learning')).toBe(true)
+    expect(ids.has('etl')).toBe(true)
+    expect(ids.has('lakehouse')).toBe(true)
   })
 })
 
@@ -29,14 +50,24 @@ describe('buildSearchQuery', () => {
     expect(query).toContain('fork:false')
   })
 
+  it('adds GitHub topic qualifiers to the repository search', () => {
+    const query = buildSearchQuery({
+      technologyId: 'python',
+      contentTypeId: 'all',
+      topicId: 'data-engineering',
+    })
+    expect(query).toContain('topic:data-engineering')
+  })
+
   it('builds targeted pandas and scikit-learn searches', () => {
     expect(buildSearchQuery({ technologyId: 'pandas', contentTypeId: 'all' })).toContain('pandas in:name,description,readme')
     expect(buildSearchQuery({ technologyId: 'sklearn', contentTypeId: 'all' })).toContain('scikit-learn in:name,description,readme')
   })
 
-  it('falls back to Python and repository filters for unknown ids', () => {
-    const query = buildSearchQuery({ technologyId: 'nope', contentTypeId: 'nope' })
+  it('falls back to Python, repository and all-topic filters for unknown ids', () => {
+    const query = buildSearchQuery({ technologyId: 'nope', contentTypeId: 'nope', topicId: 'nope' })
     expect(query).toContain('language:Python')
+    expect(query).not.toContain('topic:nope')
     expect(query).toContain('archived:false')
   })
 
@@ -58,6 +89,15 @@ describe('fallback repositories', () => {
     const sklearn = getFallbackRepositories({ technologyId: 'sklearn' })
     expect(pandas.some((repo) => repo.full_name === 'pandas-dev/pandas')).toBe(true)
     expect(sklearn.some((repo) => repo.full_name === 'scikit-learn/scikit-learn')).toBe(true)
+  })
+
+  it('honors topic filters in fallback mode', () => {
+    const dataEngineering = getFallbackRepositories({ technologyId: 'python', topicId: 'data-engineering' })
+    expect(dataEngineering.length).toBeGreaterThan(0)
+    expect(dataEngineering.some((repo) => repo.full_name === 'apache/airflow')).toBe(true)
+
+    const machineLearning = getFallbackRepositories({ technologyId: 'sklearn', topicId: 'machine-learning' })
+    expect(machineLearning.some((repo) => repo.full_name === 'scikit-learn/scikit-learn')).toBe(true)
   })
 
   it('honors fallback sort mode', () => {
