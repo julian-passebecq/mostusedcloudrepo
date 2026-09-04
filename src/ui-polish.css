@@ -1,0 +1,437 @@
+/* Final visual pass: keep the StarryLines DNA, reduce dashboard chrome, and prioritize the ranked result table. */
+
+:root {
+  --page-bg: #f5f7fa;
+  --hairline: #e3e7ee;
+}
+
+body,
+:root {
+  background: var(--page-bg);
+}
+
+/* Header: compact utility-bar proportions rather than a marketing masthead. */
+.starry-header {
+  background:
+    radial-gradient(circle at 14% 35%, rgba(255,255,255,.18) 0 1px, transparent 1.45px),
+    radial-gradient(circle at 72% 28%, rgba(255,196,12,.22) 0 1px, transparent 1.5px),
+    linear-gradient(115deg, #09132f 0%, #0c173c 58%, #13234f 100%);
+  background-size: 210px 150px, 280px 180px, auto;
+  border-bottom-width: 3px;
+}
+
+.header-inner {
+  width: min(1340px, calc(100% - 40px));
+  min-height: 70px;
+}
+
+.brand {
+  grid-template-columns: 32px minmax(0, 1fr);
+  column-gap: 10px;
+}
+
+.brand::before {
+  width: 32px;
+  height: 32px;
+  filter: none;
+}
+
+.brand-title {
+  font-size: clamp(18px, 1.8vw, 24px);
+  font-weight: 800;
+  letter-spacing: .055em;
+}
+
+.brand-title::after {
+  width: 14px;
+  height: 2px;
+  margin-left: 7px;
+}
+
+.brand-subtitle {
+  font-size: 7.8px;
+  letter-spacing: .09em;
+  color: #9faac0;
+}
+
+.data-status,
+.yellow-button {
+  min-height: 29px;
+}
+
+/* Page rhythm */
+.content-shell,
+.site-footer {
+  width: min(1340px, calc(100% - 40px));
+}
+
+.content-shell {
+  padding-top: 22px;
+}
+
+.intro-line {
+  padding: 0 2px 14px;
+}
+
+.intro-line strong {
+  font-size: 12px;
+}
+
+.intro-line span {
+  font-size: 10px;
+}
+
+.selector-stack {
+  border-color: #dce1e8;
+  border-radius: 7px;
+  box-shadow: 0 5px 18px rgba(18,29,52,.045);
+}
+
+.content-filter,
+.tech-lane,
+.topic-lane {
+  grid-template-columns: 132px minmax(0, 1fr);
+  gap: 14px;
+  padding: 10px 14px;
+  border-color: var(--hairline);
+}
+
+.selector-caption,
+.lane-label {
+  font-size: 9px;
+  letter-spacing: .085em;
+}
+
+.content-ribbon {
+  gap: 6px;
+}
+
+.content-ribbon button {
+  min-height: 31px;
+  padding: 5px 9px;
+  border-radius: 4px;
+  font-size: 9.5px;
+  box-shadow: none;
+}
+
+/* Technology rows remain the strongest visual filter, but use less vertical space. */
+.tech-slider {
+  gap: 8px;
+  padding: 3px 12px 5px;
+}
+
+.tech-tile {
+  min-width: 82px;
+  gap: 5px;
+  padding: 3px 6px 5px;
+  opacity: .58;
+}
+
+.tech-logo-shell {
+  width: 46px;
+  height: 46px;
+  box-shadow: none;
+}
+
+.tech-logo {
+  width: 30px;
+  height: 30px;
+}
+
+.logo-spark,
+.logo-databricks {
+  width: 28px;
+  height: 28px;
+}
+
+.logo-powerbi,
+.logo-fabric {
+  width: 31px;
+  height: 31px;
+}
+
+.tech-name {
+  font-size: 9px;
+}
+
+.topic-filter-grid {
+  gap: 6px;
+}
+
+.topic-domain-button {
+  min-height: 33px;
+  gap: 6px;
+  padding: 4px 8px 4px 5px;
+  border-radius: 5px;
+  box-shadow: none;
+  font-size: 9px;
+}
+
+.topic-domain-icon {
+  width: 24px;
+  height: 24px;
+  flex-basis: 24px;
+  border-radius: 5px;
+}
+
+.topic-domain-button:hover {
+  box-shadow: none;
+}
+
+/* Search/ranking toolbar: reduce headline dominance and make controls feel like one instrument panel. */
+.result-toolbar {
+  grid-template-columns: minmax(260px, .8fr) minmax(470px, 1.2fr);
+  gap: 20px;
+  padding: 19px 2px 10px;
+}
+
+.current-selection h1 {
+  margin-top: 4px;
+  font-size: clamp(19px, 1.8vw, 25px);
+  letter-spacing: -.025em;
+}
+
+.current-selection p {
+  font-size: 9.5px;
+}
+
+.search-box,
+.sort-control select,
+.chart-toggle {
+  height: 35px;
+}
+
+.search-box {
+  border-color: #cbd2dd;
+  box-shadow: 0 1px 2px rgba(18,29,52,.025);
+}
+
+.search-box input {
+  font-size: 10.5px;
+}
+
+/* Quick views are secondary refinements, not another card. */
+.quick-view-bar {
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 9px;
+  margin: 0 2px 8px;
+  padding: 3px 0 7px;
+  border: 0;
+  border-bottom: 1px solid #dde2e9;
+  border-radius: 0;
+  background: transparent;
+}
+
+.quick-view-note {
+  display: none;
+}
+
+.quick-view-options {
+  gap: 5px;
+}
+
+.quick-view-options button {
+  min-height: 25px;
+  padding: 3px 7px;
+  border-radius: 4px;
+  font-size: 8.5px;
+  box-shadow: none !important;
+}
+
+.quick-view-options button.active {
+  color: #fff;
+  border-color: var(--navy);
+  background: var(--navy);
+}
+
+.quick-view-options button.active b {
+  color: #18243a;
+  background: var(--mikado);
+}
+
+.table-meta {
+  margin-bottom: 6px;
+  font-size: 8.5px;
+}
+
+/* Remove the duplicate ranking-signal column. Stars/forks/activity already exist in the table. */
+.repo-table th:nth-child(7),
+.repo-row td:nth-child(7) {
+  display: none;
+}
+
+.repo-table {
+  min-width: 820px;
+}
+
+.repo-table th {
+  height: 40px;
+  padding: 7px 10px;
+  font-size: 9px;
+  letter-spacing: .04em;
+}
+
+.repo-table th:first-child {
+  width: 48px;
+}
+
+.repo-table th:nth-child(2) {
+  width: 48%;
+}
+
+.repo-table th:nth-child(3) {
+  width: 118px;
+}
+
+.repo-table th:nth-child(4),
+.repo-table th:nth-child(5) {
+  width: 86px;
+}
+
+.repo-table th:nth-child(6) {
+  width: 120px;
+}
+
+.repo-row td {
+  height: 48px;
+  padding: 7px 10px;
+  font-size: 9.5px;
+}
+
+.repo-identity {
+  gap: 10px;
+}
+
+.repo-identity img {
+  width: 28px;
+  height: 28px;
+}
+
+.repo-identity a {
+  font-size: 10.5px;
+}
+
+.repo-identity span {
+  margin-top: 3px;
+  font-size: 7.8px;
+}
+
+.rank-cell {
+  font-size: 11px !important;
+}
+
+.metric {
+  font-variant-numeric: tabular-nums;
+}
+
+.language-pill {
+  max-width: 105px;
+  border-radius: 4px;
+  font-size: 8px;
+}
+
+.updated-cell {
+  gap: 3px;
+}
+
+.activity-badge {
+  min-width: 41px;
+  min-height: 18px;
+  padding: 1px 5px;
+  font-size: 7px;
+}
+
+.detail-panel {
+  padding: 15px 18px;
+}
+
+.enriched-detail {
+  grid-template-columns: minmax(0, 1.55fr) minmax(260px, .45fr);
+}
+
+.chart-card {
+  margin-top: 10px;
+  border-color: #d5dbe4;
+  box-shadow: 0 5px 18px rgba(20,33,57,.035);
+}
+
+/* One consistent keyboard focus treatment. */
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible {
+  outline: 2px solid var(--mikado);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
+}
+
+@media (max-width: 980px) {
+  .content-filter,
+  .tech-lane,
+  .topic-lane {
+    grid-template-columns: 1fr;
+    gap: 7px;
+  }
+
+  .result-toolbar {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 680px) {
+  .header-inner,
+  .content-shell,
+  .site-footer {
+    width: min(100% - 24px, 1340px);
+  }
+
+  .header-inner {
+    min-height: 62px;
+  }
+
+  .brand {
+    grid-template-columns: 28px minmax(0, 1fr);
+  }
+
+  .brand::before {
+    width: 28px;
+    height: 28px;
+  }
+
+  .brand-title {
+    font-size: 17px;
+  }
+
+  .content-filter,
+  .tech-lane,
+  .topic-lane {
+    padding: 10px;
+  }
+
+  .tech-logo-shell {
+    width: 43px;
+    height: 43px;
+  }
+
+  .tech-tile {
+    min-width: 74px;
+  }
+
+  .quick-view-bar {
+    grid-template-columns: 1fr;
+  }
+
+  .repo-table {
+    min-width: 760px;
+  }
+}
