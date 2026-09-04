@@ -1,0 +1,95 @@
+:root {
+  font-family: Aptos, "Segoe UI Variable Text", "Segoe UI", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.brand {
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr);
+  grid-template-areas:
+    "mark title"
+    "mark subtitle";
+  column-gap: 11px;
+  row-gap: 3px;
+  align-items: center;
+  min-width: 0;
+  text-decoration: none;
+}
+
+.brand::before {
+  content: "";
+  grid-area: mark;
+  width: 38px;
+  height: 38px;
+  display: block;
+  background: url('/brand/repo-radar-mark.svg') center / contain no-repeat;
+  filter: drop-shadow(0 2px 7px rgba(0, 0, 0, .18));
+}
+
+.brand-title {
+  grid-area: title;
+  color: #f8fafc;
+  font-family: Aptos, "Segoe UI Variable Display", "Segoe UI", ui-sans-serif, system-ui, sans-serif;
+  font-size: clamp(20px, 2vw, 29px);
+  font-weight: 850;
+  line-height: 1;
+  letter-spacing: .075em;
+  text-transform: uppercase;
+  text-shadow: none;
+}
+
+.brand-title::after {
+  content: "";
+  display: inline-block;
+  width: 20px;
+  height: 3px;
+  margin-left: 9px;
+  border-radius: 999px;
+  background: var(--mikado);
+  vertical-align: .18em;
+}
+
+.brand-subtitle {
+  grid-area: subtitle;
+  margin-top: 0;
+  color: #aeb9cc;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 8.5px;
+  font-weight: 700;
+  letter-spacing: .105em;
+  text-transform: uppercase;
+}
+
+.brand:hover .brand-title {
+  color: #fff;
+}
+
+.brand:hover::before {
+  transform: translateY(-1px);
+}
+
+.brand::before,
+.brand-title {
+  transition: transform .14s ease, color .14s ease;
+}
+
+@media (max-width: 680px) {
+  .brand {
+    grid-template-columns: 32px minmax(0, 1fr);
+    column-gap: 9px;
+  }
+
+  .brand::before {
+    width: 32px;
+    height: 32px;
+  }
+
+  .brand-title {
+    font-size: 19px;
+    letter-spacing: .055em;
+  }
+
+  .brand-title::after {
+    width: 14px;
+    margin-left: 6px;
+  }
+}
