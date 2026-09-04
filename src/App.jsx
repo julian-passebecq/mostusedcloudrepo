@@ -9,7 +9,6 @@ import {
   Database,
   ExternalLink,
   GitFork,
-  Github,
   Layers3,
   RefreshCw,
   Search,
@@ -26,7 +25,7 @@ import {
 } from './lib/github.js'
 
 const contentIcons = {
-  all: Github,
+  all: GitFork,
   projects: Boxes,
   libraries: Layers3,
   tools: Wrench,
@@ -219,14 +218,14 @@ function App() {
     <div className="app-shell">
       <header className="site-header">
         <a className="brand" href="#top" aria-label="Cloud Repo Radar home">
-          <span className="brand-mark"><Github size={22} /></span>
+          <span className="brand-mark"><GitFork size={22} /></span>
           <span>
             <strong>Cloud Repo Radar</strong>
             <small>Data · BI · Cloud GitHub explorer</small>
           </span>
         </a>
         <a className="source-link" href="https://github.com/julian-passebecq/mostusedcloudrepo" target="_blank" rel="noreferrer">
-          Source <Github size={16} />
+          Source <GitFork size={16} />
         </a>
       </header>
 
