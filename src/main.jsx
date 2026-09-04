@@ -4,6 +4,7 @@ import App from './App.jsx'
 import './styles.css'
 import './topic-polish.css'
 import './polish.css'
+import './brand-polish.css'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
