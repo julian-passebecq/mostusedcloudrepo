@@ -24,11 +24,13 @@ describe('technology filters', () => {
 describe('topic filters', () => {
   it('includes practical data, BI and cloud topics', () => {
     const ids = new Set(TOPIC_FILTERS.map((item) => item.id))
-    expect(ids).toEqual(expect.objectContaining ? ids : ids)
     expect(ids.has('cloud')).toBe(true)
     expect(ids.has('data-engineering')).toBe(true)
     expect(ids.has('analytics')).toBe(true)
     expect(ids.has('dashboard')).toBe(true)
+    expect(ids.has('business-intelligence')).toBe(true)
+    expect(ids.has('machine-learning')).toBe(true)
+    expect(ids.has('etl')).toBe(true)
     expect(ids.has('lakehouse')).toBe(true)
   })
 })
