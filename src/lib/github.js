@@ -11,6 +11,8 @@ export const CONTENT_TYPES = [
 export const TECHNOLOGIES = [
   { id: 'python', label: 'Python', short: 'PY', group: 'code', query: 'language:Python' },
   { id: 'pyspark', label: 'PySpark', short: 'SP', group: 'code', query: 'pyspark in:name,description,readme' },
+  { id: 'pandas', label: 'Pandas', short: 'PD', group: 'code', query: 'pandas in:name,description,readme language:Python' },
+  { id: 'sklearn', label: 'scikit-learn', short: 'SK', group: 'code', query: 'scikit-learn in:name,description,readme language:Python' },
   { id: 'powershell', label: 'PowerShell', short: 'PS', group: 'code', query: 'language:PowerShell' },
   { id: 'sql', label: 'SQL', short: 'SQL', group: 'code', query: 'sql in:name,description,readme' },
   { id: 'powerbi', label: 'Power BI', short: 'BI', group: 'service', query: 'power bi in:name,description,readme' },
@@ -25,42 +27,191 @@ export const SORT_OPTIONS = [
   { id: 'updated', label: 'Recently active', apiSort: 'updated' },
 ]
 
+const CACHE_TTL_MS = 15 * 60 * 1000
+const MAX_SEARCH_TEXT = 120
+
 const DEMO_REPOS = [
-  ['apache/spark', 'Unified analytics engine for large-scale data processing.', 'Scala', 42000, 28000, ['spark', 'pyspark', 'data-engineering']],
-  ['PowerShell/PowerShell', 'PowerShell for every system.', 'C#', 47000, 7800, ['powershell', 'automation', 'shell']],
-  ['microsoft/sql-server-samples', 'Official SQL Server and Azure SQL samples.', 'TSQL', 11000, 5200, ['sql-server', 'sql', 'samples']],
-  ['microsoft/PowerBI-Developer-Samples', 'Developer samples for Power BI embedding and APIs.', 'C#', 2300, 1500, ['power-bi', 'samples', 'embedded-analytics']],
-  ['microsoft/fabric-samples', 'Samples and reference material for Microsoft Fabric workloads.', 'Jupyter Notebook', 2700, 1100, ['microsoft-fabric', 'analytics', 'samples']],
-  ['databricks/cli', 'Databricks command line interface.', 'Go', 900, 260, ['databricks', 'cli', 'cloud']],
-  ['delta-io/delta', 'Open-source storage framework for a Lakehouse architecture.', 'Scala', 8200, 1800, ['delta-lake', 'lakehouse', 'data-engineering']],
-  ['pandas-dev/pandas', 'Flexible and powerful data analysis / manipulation library for Python.', 'Python', 46000, 19000, ['python', 'data-analysis', 'data-science']],
-  ['dbt-labs/dbt-core', 'Framework for transforming data in the warehouse.', 'Python', 12000, 2100, ['sql', 'analytics-engineering', 'data-transformation']],
-  ['apache/airflow', 'Platform to programmatically author, schedule and monitor workflows.', 'Python', 42000, 15000, ['workflow', 'orchestration', 'data-engineering']],
+  {
+    fullName: 'apache/spark',
+    description: 'Unified analytics engine for large-scale data processing.',
+    language: 'Scala',
+    stars: 42000,
+    forks: 28000,
+    topics: ['spark', 'pyspark', 'data-engineering'],
+    technologies: ['pyspark', 'python'],
+    contentTypes: ['projects', 'libraries'],
+  },
+  {
+    fullName: 'pandas-dev/pandas',
+    description: 'Flexible and powerful data analysis and manipulation library for Python.',
+    language: 'Python',
+    stars: 46000,
+    forks: 19000,
+    topics: ['pandas', 'python', 'data-analysis'],
+    technologies: ['python', 'pandas'],
+    contentTypes: ['projects', 'libraries'],
+  },
+  {
+    fullName: 'pandas-dev/pandas-stubs',
+    description: 'Public type stubs for pandas.',
+    language: 'Python',
+    stars: 1800,
+    forks: 300,
+    topics: ['pandas', 'typing', 'python'],
+    technologies: ['python', 'pandas'],
+    contentTypes: ['libraries', 'tools'],
+  },
+  {
+    fullName: 'scikit-learn/scikit-learn',
+    description: 'Machine learning in Python.',
+    language: 'Python',
+    stars: 62000,
+    forks: 26000,
+    topics: ['machine-learning', 'python', 'scikit-learn'],
+    technologies: ['python', 'sklearn'],
+    contentTypes: ['projects', 'libraries'],
+  },
+  {
+    fullName: 'scikit-learn-contrib/imbalanced-learn',
+    description: 'A Python toolbox to tackle the curse of imbalanced datasets in machine learning.',
+    language: 'Python',
+    stars: 8000,
+    forks: 1300,
+    topics: ['scikit-learn', 'machine-learning', 'imbalanced-learning'],
+    technologies: ['python', 'sklearn'],
+    contentTypes: ['libraries', 'learning'],
+  },
+  {
+    fullName: 'PowerShell/PowerShell',
+    description: 'PowerShell for every system.',
+    language: 'C#',
+    stars: 47000,
+    forks: 7800,
+    topics: ['powershell', 'automation', 'shell'],
+    technologies: ['powershell'],
+    contentTypes: ['projects', 'tools'],
+  },
+  {
+    fullName: 'MicrosoftDocs/PowerShell-Docs',
+    description: 'The official PowerShell documentation source.',
+    language: 'PowerShell',
+    stars: 1800,
+    forks: 2900,
+    topics: ['powershell', 'documentation', 'learning'],
+    technologies: ['powershell'],
+    contentTypes: ['learning'],
+  },
+  {
+    fullName: 'microsoft/sql-server-samples',
+    description: 'Official SQL Server and Azure SQL samples.',
+    language: 'TSQL',
+    stars: 11000,
+    forks: 5200,
+    topics: ['sql-server', 'sql', 'samples'],
+    technologies: ['sql', 'sqlserver'],
+    contentTypes: ['projects', 'samples', 'templates'],
+  },
+  {
+    fullName: 'dbt-labs/dbt-core',
+    description: 'Framework for transforming data in the warehouse.',
+    language: 'Python',
+    stars: 12000,
+    forks: 2100,
+    topics: ['sql', 'analytics-engineering', 'data-transformation'],
+    technologies: ['python', 'sql'],
+    contentTypes: ['projects', 'tools'],
+  },
+  {
+    fullName: 'apache/airflow',
+    description: 'Platform to programmatically author, schedule and monitor workflows.',
+    language: 'Python',
+    stars: 42000,
+    forks: 15000,
+    topics: ['workflow', 'orchestration', 'data-engineering'],
+    technologies: ['python'],
+    contentTypes: ['projects', 'tools'],
+  },
+  {
+    fullName: 'microsoft/PowerBI-Developer-Samples',
+    description: 'Developer samples for Power BI embedding and APIs.',
+    language: 'C#',
+    stars: 2300,
+    forks: 1500,
+    topics: ['power-bi', 'samples', 'embedded-analytics'],
+    technologies: ['powerbi'],
+    contentTypes: ['samples', 'templates'],
+  },
+  {
+    fullName: 'microsoft/fabric-samples',
+    description: 'Samples and reference material for Microsoft Fabric workloads.',
+    language: 'Jupyter Notebook',
+    stars: 2700,
+    forks: 1100,
+    topics: ['microsoft-fabric', 'analytics', 'samples'],
+    technologies: ['fabric', 'pyspark', 'python'],
+    contentTypes: ['samples', 'templates', 'learning'],
+  },
+  {
+    fullName: 'databricks/cli',
+    description: 'Databricks command line interface.',
+    language: 'Go',
+    stars: 900,
+    forks: 260,
+    topics: ['databricks', 'cli', 'cloud'],
+    technologies: ['databricks'],
+    contentTypes: ['projects', 'tools'],
+  },
+  {
+    fullName: 'databricks/databricks-sdk-py',
+    description: 'Databricks SDK for Python.',
+    language: 'Python',
+    stars: 900,
+    forks: 330,
+    topics: ['databricks', 'python', 'sdk'],
+    technologies: ['databricks', 'python'],
+    contentTypes: ['libraries', 'tools'],
+  },
+  {
+    fullName: 'delta-io/delta',
+    description: 'Open-source storage framework for a Lakehouse architecture.',
+    language: 'Scala',
+    stars: 8200,
+    forks: 1800,
+    topics: ['delta-lake', 'lakehouse', 'data-engineering'],
+    technologies: ['databricks', 'pyspark'],
+    contentTypes: ['projects', 'libraries'],
+  },
 ]
 
-const demoItems = DEMO_REPOS.map(([fullName, description, language, stars, forks, topics], index) => {
-  const [owner, name] = fullName.split('/')
+const demoItems = DEMO_REPOS.map((repo, index) => {
+  const [owner, name] = repo.fullName.split('/')
   return {
     id: `demo-${index}`,
     name,
-    full_name: fullName,
-    description,
-    html_url: `https://github.com/${fullName}`,
-    stargazers_count: stars,
-    forks_count: forks,
+    full_name: repo.fullName,
+    description: repo.description,
+    html_url: `https://github.com/${repo.fullName}`,
+    stargazers_count: repo.stars,
+    forks_count: repo.forks,
     open_issues_count: 0,
-    language,
-    topics,
+    language: repo.language,
+    topics: repo.topics,
     updated_at: new Date(Date.now() - index * 86400000 * 7).toISOString(),
     owner: { login: owner, avatar_url: `https://github.com/${owner}.png?size=96` },
     license: null,
+    _technologies: repo.technologies,
+    _contentTypes: repo.contentTypes,
   }
 })
+
+function sanitizeSearchText(value = '') {
+  return String(value).trim().slice(0, MAX_SEARCH_TEXT)
+}
 
 export function buildSearchQuery({ technologyId, contentTypeId, searchText = '' }) {
   const technology = TECHNOLOGIES.find((item) => item.id === technologyId) ?? TECHNOLOGIES[0]
   const contentType = CONTENT_TYPES.find((item) => item.id === contentTypeId) ?? CONTENT_TYPES[0]
-  const terms = [technology.query, contentType.query, searchText.trim(), 'archived:false', 'fork:false']
+  const terms = [technology.query, contentType.query, sanitizeSearchText(searchText), 'archived:false', 'fork:false']
   return terms.filter(Boolean).join(' ')
 }
 
@@ -82,6 +233,33 @@ export function normalizeRepository(item) {
   }
 }
 
+function sortFallback(items, sort) {
+  const copy = [...items]
+  if (sort === 'forks') return copy.sort((a, b) => b.forks_count - a.forks_count)
+  if (sort === 'updated') return copy.sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at))
+  return copy.sort((a, b) => b.stargazers_count - a.stargazers_count)
+}
+
+export function getFallbackRepositories({ technologyId = 'python', contentTypeId = 'all', searchText = '', sort = 'stars' } = {}) {
+  const text = sanitizeSearchText(searchText).toLowerCase()
+  let matches = demoItems.filter((item) => item._technologies.includes(technologyId))
+
+  if (contentTypeId !== 'all') {
+    const byType = matches.filter((item) => item._contentTypes.includes(contentTypeId))
+    if (byType.length) matches = byType
+  }
+
+  if (text) {
+    const byText = matches.filter((item) => {
+      const haystack = [item.full_name, item.description, item.language, ...(item.topics || [])].join(' ').toLowerCase()
+      return text.split(/\s+/).every((term) => haystack.includes(term))
+    })
+    if (byText.length) matches = byText
+  }
+
+  return sortFallback(matches.map(normalizeRepository), sort)
+}
+
 function getCacheKey(query, sort) {
   return `cloud-repo-radar:${sort}:${query}`
 }
@@ -92,7 +270,10 @@ function readCache(key) {
     if (!raw) return null
     const parsed = JSON.parse(raw)
     const age = Date.now() - parsed.savedAt
-    if (age > 15 * 60 * 1000) return null
+    if (!Array.isArray(parsed.items) || age > CACHE_TTL_MS) {
+      localStorage.removeItem(key)
+      return null
+    }
     return parsed.items
   } catch {
     return null
@@ -107,7 +288,14 @@ function writeCache(key, items) {
   }
 }
 
-export async function searchRepositories({ query, sort = 'stars', signal }) {
+export async function searchRepositories({
+  query,
+  sort = 'stars',
+  signal,
+  technologyId = 'python',
+  contentTypeId = 'all',
+  searchText = '',
+}) {
   const key = getCacheKey(query, sort)
   const cached = readCache(key)
   if (cached) return { items: cached, source: 'cache' }
@@ -131,6 +319,7 @@ export async function searchRepositories({ query, sort = 'stars', signal }) {
     if (!response.ok) {
       const error = new Error(`GitHub returned ${response.status}`)
       error.status = response.status
+      error.rateLimited = response.status === 403 || response.status === 429
       throw error
     }
 
@@ -140,6 +329,7 @@ export async function searchRepositories({ query, sort = 'stars', signal }) {
     return { items, source: 'live' }
   } catch (error) {
     if (error.name === 'AbortError') throw error
-    return { items: demoItems, source: 'demo', error }
+    const items = getFallbackRepositories({ technologyId, contentTypeId, searchText, sort })
+    return { items, source: 'demo', error }
   }
 }
