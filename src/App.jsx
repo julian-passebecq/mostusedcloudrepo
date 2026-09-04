@@ -25,8 +25,8 @@ import {
   TECHNOLOGIES,
   TOPIC_FILTERS,
   buildSearchQuery,
-  searchRepositories,
 } from './lib/github.js'
+import { searchRepositoriesEnhanced } from './lib/search.js'
 
 const contentIcons = {
   all: GitFork,
@@ -51,13 +51,25 @@ const topicIcons = {
   'data-visualization': Sparkles,
 }
 
+const QUICK_VIEWS = [
+  { id: 'all', label: 'All' },
+  { id: 'recent', label: 'Updated ≤ 90d' },
+  { id: 'licensed', label: 'Licensed' },
+  { id: 'popular', label: '1k+ stars' },
+]
+
 function formatCompact(value) {
   return new Intl.NumberFormat('en', { notation: 'compact', maximumFractionDigits: 1 }).format(value || 0)
 }
 
+function daysSince(dateString) {
+  if (!dateString) return Number.POSITIVE_INFINITY
+  return Math.max(0, Math.floor((Date.now() - new Date(dateString).getTime()) / 86400000))
+}
+
 function relativeDate(dateString) {
   if (!dateString) return 'Unknown'
-  const days = Math.max(0, Math.round((Date.now() - new Date(dateString).getTime()) / 86400000))
+  const days = daysSince(dateString)
   if (days === 0) return 'today'
   if (days < 30) return `${days}d ago`
   if (days < 365) return `${Math.round(days / 30)}mo ago`
@@ -67,6 +79,25 @@ function relativeDate(dateString) {
 function exactDate(dateString) {
   if (!dateString) return '—'
   return new Intl.DateTimeFormat('en-GB', { year: 'numeric', month: 'short', day: '2-digit' }).format(new Date(dateString))
+}
+
+function licenseLabel(repo) {
+  const license = repo.license
+  if (!license) return 'No license metadata'
+  if (license.spdx_id && license.spdx_id !== 'NOASSERTION') return license.spdx_id
+  return license.name || 'License declared'
+}
+
+function hasLicense(repo) {
+  return Boolean(repo.license && (repo.license.spdx_id !== 'NOASSERTION' || repo.license.name))
+}
+
+function activityBand(repo) {
+  const age = daysSince(repo.updated_at)
+  if (age <= 30) return { id: 'fresh', label: 'Fresh', detail: 'Updated within 30 days' }
+  if (age <= 180) return { id: 'active', label: 'Active', detail: 'Updated within 6 months' }
+  if (age <= 365) return { id: 'quiet', label: 'Quiet', detail: 'Updated within 1 year' }
+  return { id: 'stale', label: 'Stale', detail: 'No repository update for over 1 year' }
 }
 
 function TechnologyRow({ label, items, activeId, onSelect }) {
@@ -155,7 +186,6 @@ function PopularityChart({ repos, sort }) {
     : metric === 'updated'
       ? 'Repositories ordered by most recent GitHub activity'
       : 'Top repositories by GitHub stars'
-  const contextLabel = metric === 'updated' ? 'Bar length = relative recency' : 'Current result set'
 
   if (!top.length) return null
 
@@ -166,7 +196,7 @@ function PopularityChart({ repos, sort }) {
           <span className="mini-label"><BarChart3 size={13} /> D3 view</span>
           <h2 id="chart-title">{title}</h2>
         </div>
-        <span>{contextLabel}</span>
+        <span>{metric === 'updated' ? 'Bar length = relative recency' : 'Current quick view'}</span>
       </div>
       <div className="chart-scroll">
         <svg className="repo-chart" viewBox={`0 0 ${width} ${height}`} role="img" aria-label={ariaLabel}>
@@ -199,6 +229,11 @@ function signalLabel(sort) {
   if (sort === 'forks') return 'Fork signal'
   if (sort === 'updated') return 'Activity'
   return 'Star signal'
+}
+
+function ActivityBadge({ repo }) {
+  const band = activityBand(repo)
+  return <span className={`activity-badge ${band.id}`} title={band.detail}>{band.label}</span>
 }
 
 function RepoTable({ repos, sort }) {
@@ -275,11 +310,13 @@ function FragmentRow({ repo, rank, sort, expanded, onToggle }) {
               >
                 {repo.full_name} <ExternalLink size={12} />
               </a>
-              <span>{repo.topics?.slice(0, 2).join(' · ') || 'GitHub repository'}</span>
+              <span>{repo.topics?.slice(0, 3).map((topic) => `#${topic}`).join(' · ') || 'GitHub repository'}</span>
             </div>
           </div>
         </td>
-        <td title={exactDate(repo.updated_at)}>{relativeDate(repo.updated_at)}</td>
+        <td title={exactDate(repo.updated_at)}>
+          <div className="updated-cell"><ActivityBadge repo={repo} /><span>{relativeDate(repo.updated_at)}</span></div>
+        </td>
         <td><span className="metric"><Star size={13} /> {formatCompact(repo.stargazers_count)}</span></td>
         <td><span className="metric"><GitFork size={13} /> {formatCompact(repo.forks_count)}</span></td>
         <td><span className="language-pill">{repo.language}</span></td>
@@ -288,15 +325,25 @@ function FragmentRow({ repo, rank, sort, expanded, onToggle }) {
       {expanded && (
         <tr className="detail-row">
           <td colSpan="7">
-            <div className="detail-panel">
-              <div>
+            <div className="detail-panel enriched-detail">
+              <div className="detail-copy">
                 <strong>Description</strong>
                 <p>{repo.description}</p>
+                <div className="topic-chip-row" aria-label="Repository topics">
+                  {(repo.topics || []).slice(0, 7).map((topic) => <span key={topic}>#{topic}</span>)}
+                  {!repo.topics?.length && <span className="muted-chip">No topics</span>}
+                </div>
               </div>
-              <div className="detail-meta">
-                <span>Updated <b>{exactDate(repo.updated_at)}</b></span>
-                <span>Owner <b>{repo.owner?.login || repo.full_name.split('/')[0]}</b></span>
-                <span>Topics <b>{repo.topics?.slice(0, 4).join(', ') || '—'}</b></span>
+              <div className="detail-side">
+                <div className="detail-facts">
+                  <span>Activity <b><ActivityBadge repo={repo} /> {exactDate(repo.updated_at)}</b></span>
+                  <span>License <b>{licenseLabel(repo)}</b></span>
+                  <span>Open issues / PRs <b>{formatCompact(repo.open_issues_count)}</b></span>
+                  <span>Owner <b>{repo.owner?.login || repo.full_name.split('/')[0]}</b></span>
+                </div>
+                <a className="detail-github-link" href={repo.html_url} target="_blank" rel="noreferrer">
+                  Open repository <ExternalLink size={12} />
+                </a>
               </div>
             </div>
           </td>
@@ -311,11 +358,15 @@ function App() {
   const [technology, setTechnology] = useState('python')
   const [topic, setTopic] = useState('all')
   const [sort, setSort] = useState('stars')
+  const [quickView, setQuickView] = useState('all')
   const [searchDraft, setSearchDraft] = useState('')
   const [searchText, setSearchText] = useState('')
   const [repos, setRepos] = useState([])
   const [status, setStatus] = useState('loading')
   const [source, setSource] = useState('live')
+  const [rateLimit, setRateLimit] = useState(null)
+  const [totalCount, setTotalCount] = useState(null)
+  const [incompleteResults, setIncompleteResults] = useState(false)
   const [retryNonce, setRetryNonce] = useState(0)
   const [showChart, setShowChart] = useState(false)
   const requestCounter = useRef(0)
@@ -332,13 +383,31 @@ function App() {
     [technology, contentType, topic, searchText],
   )
 
+  const viewCounts = useMemo(() => ({
+    all: repos.length,
+    recent: repos.filter((repo) => daysSince(repo.updated_at) <= 90).length,
+    licensed: repos.filter(hasLicense).length,
+    popular: repos.filter((repo) => repo.stargazers_count >= 1000).length,
+  }), [repos])
+
+  const visibleRepos = useMemo(() => {
+    if (quickView === 'recent') return repos.filter((repo) => daysSince(repo.updated_at) <= 90)
+    if (quickView === 'licensed') return repos.filter(hasLicense)
+    if (quickView === 'popular') return repos.filter((repo) => repo.stargazers_count >= 1000)
+    return repos
+  }, [repos, quickView])
+
+  useEffect(() => {
+    setQuickView('all')
+  }, [query])
+
   useEffect(() => {
     const controller = new AbortController()
     const requestId = ++requestCounter.current
     setStatus('loading')
 
     const timer = setTimeout(() => {
-      searchRepositories({
+      searchRepositoriesEnhanced({
         query,
         sort: selectedSort.apiSort,
         signal: controller.signal,
@@ -351,6 +420,9 @@ function App() {
           if (requestId !== requestCounter.current) return
           setRepos(result.items)
           setSource(result.source)
+          setRateLimit(result.rateLimit)
+          setTotalCount(result.totalCount)
+          setIncompleteResults(result.incompleteResults)
           setStatus('ready')
         })
         .catch((error) => {
@@ -378,7 +450,7 @@ function App() {
             <span className="brand-subtitle">GitHub rankings for data · BI · cloud</span>
           </a>
           <div className="header-actions">
-            <span className={`data-status ${source}`}><CloudStatus source={source} status={status} /></span>
+            <span className={`data-status ${source}`}><CloudStatus source={source} status={status} rateLimit={rateLimit} /></span>
             <a className="yellow-button" href="https://github.com/julian-passebecq/mostusedcloudrepo" target="_blank" rel="noreferrer">
               <GitFork size={15} /> GitHub
             </a>
@@ -453,6 +525,26 @@ function App() {
           </div>
         </section>
 
+        {status === 'ready' && repos.length > 0 && (
+          <div className="quick-view-bar" aria-label="Client-side repository quick views">
+            <span className="quick-view-label">Quick view</span>
+            <div className="quick-view-options">
+              {QUICK_VIEWS.map((view) => (
+                <button
+                  type="button"
+                  key={view.id}
+                  className={quickView === view.id ? 'active' : ''}
+                  onClick={() => setQuickView(view.id)}
+                  aria-pressed={quickView === view.id}
+                >
+                  {view.label} <b>{viewCounts[view.id]}</b>
+                </button>
+              ))}
+            </div>
+            <span className="quick-view-note">client-side · no extra API request</span>
+          </div>
+        )}
+
         {source === 'demo' && status === 'ready' && (
           <div className="notice" role="status">
             GitHub search is unavailable or rate-limited. Showing a filter-aware fallback set; metrics may not be current.
@@ -462,35 +554,47 @@ function App() {
           </div>
         )}
 
+        {incompleteResults && status === 'ready' && source !== 'demo' && (
+          <div className="subtle-notice" role="status">GitHub marked this search as incomplete; the ranking may omit some matching repositories.</div>
+        )}
+
         {status === 'loading' ? (
           <div className="state-box"><RefreshCw size={20} className="spin" /> Loading GitHub repositories…</div>
         ) : status === 'error' ? (
           <div className="state-box">Could not load repositories. Change a filter to retry.</div>
         ) : repos.length === 0 ? (
           <div className="state-box">No repositories matched this combination. Try All topics or broaden the content type.</div>
+        ) : visibleRepos.length === 0 ? (
+          <div className="state-box compact-state">
+            No loaded repositories match this quick view.
+            <button type="button" onClick={() => setQuickView('all')}>Show all loaded results</button>
+          </div>
         ) : (
           <>
-            <div className="table-meta">
-              <span><b>{repos.length}</b> results loaded</span>
-              <span>Click a row to expand its description</span>
+            <div className="table-meta enriched-table-meta">
+              <span><b>{visibleRepos.length}</b> shown · {repos.length} loaded{totalCount > repos.length ? ` · ${formatCompact(totalCount)} GitHub matches` : ''}</span>
+              <span>Click a row to inspect topics, license and activity</span>
             </div>
-            <RepoTable repos={repos} sort={sort} />
-            {showChart && <PopularityChart repos={repos} sort={sort} />}
+            <RepoTable repos={visibleRepos} sort={sort} />
+            {showChart && <PopularityChart repos={visibleRepos} sort={sort} />}
           </>
         )}
       </main>
 
       <footer className="site-footer">
         <span>React + Vite + D3 · GitHub REST API</span>
-        <span>Local SVG technology marks · no image CDN dependency</span>
+        <span>50-result search · 15 min browser cache · local SVG technology marks</span>
       </footer>
     </div>
   )
 }
 
-function CloudStatus({ source, status }) {
+function CloudStatus({ source, status, rateLimit }) {
   if (status === 'loading') return <><RefreshCw size={12} className="spin" /> Loading</>
-  if (source === 'live') return <><Sparkles size={12} /> Live</>
+  if (source === 'live') {
+    const hasQuota = Number.isFinite(rateLimit?.remaining) && Number.isFinite(rateLimit?.limit)
+    return <><Sparkles size={12} /> Live{hasQuota ? ` · ${rateLimit.remaining}/${rateLimit.limit}` : ''}</>
+  }
   if (source === 'cache') return <><Database size={12} /> Cached</>
   return <><Database size={12} /> Fallback</>
 }
