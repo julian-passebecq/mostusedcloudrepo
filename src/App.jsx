@@ -4,12 +4,15 @@ import {
   BarChart3,
   BookOpen,
   Boxes,
+  BrainCircuit,
+  Cloud,
   Code2,
   Database,
   ExternalLink,
   GitFork,
   Hash,
   Layers3,
+  LayoutDashboard,
   RefreshCw,
   Search,
   Sparkles,
@@ -33,6 +36,19 @@ const contentIcons = {
   samples: Code2,
   templates: Sparkles,
   learning: BookOpen,
+}
+
+const topicIcons = {
+  all: Hash,
+  cloud: Cloud,
+  'data-engineering': GitFork,
+  analytics: BarChart3,
+  dashboard: LayoutDashboard,
+  'business-intelligence': Database,
+  'machine-learning': BrainCircuit,
+  etl: RefreshCw,
+  lakehouse: Layers3,
+  'data-visualization': Sparkles,
 }
 
 function formatCompact(value) {
@@ -83,62 +99,87 @@ function TechnologyRow({ label, items, activeId, onSelect }) {
 function TopicFilterRow({ activeId, onSelect }) {
   return (
     <div className="topic-lane">
-      <div className="lane-label"><Hash size={12} /> Category</div>
-      <div className="topic-tags" role="list" aria-label="Repository topic filter">
-        {TOPIC_FILTERS.map((item) => (
-          <button
-            type="button"
-            key={item.id}
-            className={activeId === item.id ? 'active' : ''}
-            onClick={() => onSelect(item.id)}
-            aria-pressed={activeId === item.id}
-            title={item.hint}
-          >
-            {item.label}
-          </button>
-        ))}
+      <div className="lane-label"><Layers3 size={12} /> Category</div>
+      <div className="topic-filter-grid" role="list" aria-label="Repository topic filter">
+        {TOPIC_FILTERS.map((item) => {
+          const Icon = topicIcons[item.id] ?? Hash
+          return (
+            <button
+              type="button"
+              key={item.id}
+              className={`topic-domain-button ${activeId === item.id ? 'active' : ''}`}
+              onClick={() => onSelect(item.id)}
+              aria-pressed={activeId === item.id}
+              title={item.hint}
+            >
+              <span className="topic-domain-icon" aria-hidden="true"><Icon size={15} strokeWidth={1.9} /></span>
+              <span className="topic-domain-label">{item.label}</span>
+            </button>
+          )
+        })}
       </div>
     </div>
   )
 }
 
-function PopularityChart({ repos }) {
+function PopularityChart({ repos, sort }) {
+  const metric = sort === 'forks' ? 'forks' : sort === 'updated' ? 'updated' : 'stars'
+  const accessor = (repo) => {
+    if (metric === 'forks') return repo.forks_count || 0
+    if (metric === 'updated') return repo.updated_at ? new Date(repo.updated_at).getTime() : 0
+    return repo.stargazers_count || 0
+  }
+
   const top = useMemo(
-    () => [...repos].sort((a, b) => b.stargazers_count - a.stargazers_count).slice(0, 10),
-    [repos],
+    () => [...repos].sort((a, b) => accessor(b) - accessor(a)).slice(0, 10),
+    [repos, metric],
   )
 
   const width = 920
   const rowHeight = 38
   const left = 250
-  const right = 80
+  const right = 96
   const height = Math.max(170, top.length * rowHeight + 24)
-  const starMax = max(top, (repo) => repo.stargazers_count) || 1
-  const x = scaleLinear().domain([0, starMax]).range([0, width - left - right])
-  const starFormat = format('~s')
+  const minimum = metric === 'updated' && top.length ? Math.min(...top.map(accessor)) : 0
+  const visualValue = (repo) => metric === 'updated' ? Math.max(0, accessor(repo) - minimum) : accessor(repo)
+  const metricMax = max(top, visualValue) || 1
+  const x = scaleLinear().domain([0, metricMax]).range([0, width - left - right])
+  const compactFormat = format('~s')
+  const title = metric === 'forks'
+    ? 'Top repositories by forks'
+    : metric === 'updated'
+      ? 'Most recently active repositories'
+      : 'Top repositories by stars'
+  const ariaLabel = metric === 'forks'
+    ? 'Top repositories by GitHub forks'
+    : metric === 'updated'
+      ? 'Repositories ordered by most recent GitHub activity'
+      : 'Top repositories by GitHub stars'
+  const contextLabel = metric === 'updated' ? 'Bar length = relative recency' : 'Current result set'
 
   if (!top.length) return null
 
   return (
-    <section className="chart-card" aria-labelledby="chart-title">
+    <section className="chart-card" data-metric={metric} aria-labelledby="chart-title">
       <div className="chart-title-row">
         <div>
           <span className="mini-label"><BarChart3 size={13} /> D3 view</span>
-          <h2 id="chart-title">Top repositories by stars</h2>
+          <h2 id="chart-title">{title}</h2>
         </div>
-        <span>Current result set</span>
+        <span>{contextLabel}</span>
       </div>
       <div className="chart-scroll">
-        <svg className="repo-chart" viewBox={`0 0 ${width} ${height}`} role="img" aria-label="Top repositories by GitHub stars">
+        <svg className="repo-chart" viewBox={`0 0 ${width} ${height}`} role="img" aria-label={ariaLabel}>
           {top.map((repo, index) => {
             const y = index * rowHeight + 10
-            const barWidth = Math.max(4, x(repo.stargazers_count))
+            const barWidth = Math.max(4, x(visualValue(repo)))
+            const valueLabel = metric === 'updated' ? relativeDate(repo.updated_at) : compactFormat(accessor(repo))
             return (
               <g key={repo.id ?? repo.full_name} transform={`translate(0 ${y})`} className="chart-row">
                 <text x="0" y="18" className="chart-rank">{String(index + 1).padStart(2, '0')}</text>
                 <text x="36" y="18" className="chart-name">{repo.full_name}</text>
                 <rect x={left} y="4" width={barWidth} height="18" rx="4" className="chart-bar" />
-                <text x={left + barWidth + 10} y="18" className="chart-value">{starFormat(repo.stargazers_count)}</text>
+                <text x={left + barWidth + 10} y="18" className="chart-value">{valueLabel}</text>
               </g>
             )
           })}
@@ -434,7 +475,7 @@ function App() {
               <span>Click a row to expand its description</span>
             </div>
             <RepoTable repos={repos} sort={sort} />
-            {showChart && <PopularityChart repos={repos} />}
+            {showChart && <PopularityChart repos={repos} sort={sort} />}
           </>
         )}
       </main>
