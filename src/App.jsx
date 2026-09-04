@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { format, max, scaleLinear } from 'd3'
 import {
-  ArrowUpRight,
   BarChart3,
   BookOpen,
   Boxes,
@@ -47,23 +46,30 @@ function relativeDate(dateString) {
   return `${Math.round(days / 365)}y ago`
 }
 
+function exactDate(dateString) {
+  if (!dateString) return '—'
+  return new Intl.DateTimeFormat('en-GB', { year: 'numeric', month: 'short', day: '2-digit' }).format(new Date(dateString))
+}
+
 function TechnologyRow({ label, items, activeId, onSelect }) {
   return (
-    <div className="tech-row">
-      <div className="row-label">{label}</div>
-      <div className="tech-buttons" role="list" aria-label={label}>
-        {items.map((item) => (
-          <button
-            type="button"
-            key={item.id}
-            className={`tech-button ${activeId === item.id ? 'active' : ''} ${item.group}`}
-            onClick={() => onSelect(item.id)}
-            aria-pressed={activeId === item.id}
-          >
-            <span className="tech-monogram">{item.short}</span>
-            {item.label}
-          </button>
-        ))}
+    <div className="tech-lane">
+      <div className="lane-label">{label}</div>
+      <div className="tech-slider-mask">
+        <div className="tech-slider" role="list" aria-label={label}>
+          {items.map((item) => (
+            <button
+              type="button"
+              key={item.id}
+              className={`tech-tile ${activeId === item.id ? 'active' : ''}`}
+              onClick={() => onSelect(item.id)}
+              aria-pressed={activeId === item.id}
+            >
+              <span className="tech-glyph">{item.short}</span>
+              <span className="tech-name">{item.label}</span>
+            </button>
+          ))}
+        </div>
       </div>
     </div>
   )
@@ -75,11 +81,11 @@ function PopularityChart({ repos }) {
     [repos],
   )
 
-  const width = 860
-  const rowHeight = 40
-  const left = 210
-  const right = 70
-  const height = Math.max(180, top.length * rowHeight + 28)
+  const width = 920
+  const rowHeight = 38
+  const left = 250
+  const right = 80
+  const height = Math.max(170, top.length * rowHeight + 24)
   const starMax = max(top, (repo) => repo.stargazers_count) || 1
   const x = scaleLinear().domain([0, starMax]).range([0, width - left - right])
   const starFormat = format('~s')
@@ -88,23 +94,23 @@ function PopularityChart({ repos }) {
 
   return (
     <section className="chart-card" aria-labelledby="chart-title">
-      <div className="section-heading compact">
+      <div className="chart-title-row">
         <div>
-          <span className="eyebrow"><BarChart3 size={14} /> D3 view</span>
+          <span className="mini-label"><BarChart3 size={13} /> D3 view</span>
           <h2 id="chart-title">Top repositories by stars</h2>
         </div>
-        <span className="chart-caption">Current result set</span>
+        <span>Current result set</span>
       </div>
       <div className="chart-scroll">
         <svg className="repo-chart" viewBox={`0 0 ${width} ${height}`} role="img" aria-label="Top repositories by GitHub stars">
           {top.map((repo, index) => {
-            const y = index * rowHeight + 12
+            const y = index * rowHeight + 10
             const barWidth = Math.max(4, x(repo.stargazers_count))
             return (
-              <g key={repo.id} transform={`translate(0 ${y})`} className="chart-row">
+              <g key={repo.id ?? repo.full_name} transform={`translate(0 ${y})`} className="chart-row">
                 <text x="0" y="18" className="chart-rank">{String(index + 1).padStart(2, '0')}</text>
                 <text x="36" y="18" className="chart-name">{repo.full_name}</text>
-                <rect x={left} y="4" width={barWidth} height="19" rx="8" className="chart-bar" />
+                <rect x={left} y="4" width={barWidth} height="18" rx="4" className="chart-bar" />
                 <text x={left + barWidth + 10} y="18" className="chart-value">{starFormat(repo.stargazers_count)}</text>
               </g>
             )
@@ -115,42 +121,121 @@ function PopularityChart({ repos }) {
   )
 }
 
-function RepoCard({ repo, rank }) {
+function signalValue(repo, sort) {
+  if (sort === 'forks') return formatCompact(repo.forks_count)
+  if (sort === 'updated') return relativeDate(repo.updated_at)
+  return formatCompact(repo.stargazers_count)
+}
+
+function signalLabel(sort) {
+  if (sort === 'forks') return 'Fork signal'
+  if (sort === 'updated') return 'Activity'
+  return 'Star signal'
+}
+
+function RepoTable({ repos, sort }) {
+  const [expanded, setExpanded] = useState(null)
+
+  function toggle(repo) {
+    const key = repo.id ?? repo.full_name
+    setExpanded((current) => (current === key ? null : key))
+  }
+
   return (
-    <article className="repo-card">
-      <div className="repo-topline">
-        <div className="repo-owner">
-          <img src={repo.owner?.avatar_url} alt="" loading="lazy" />
-          <span>{repo.owner?.login || repo.full_name.split('/')[0]}</span>
-        </div>
-        <span className="rank">#{rank}</span>
+    <div className="table-shell">
+      <div className="table-scroll">
+        <table className="repo-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Repository</th>
+              <th>Updated</th>
+              <th>Stars</th>
+              <th>Forks</th>
+              <th>Language</th>
+              <th>{signalLabel(sort)}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {repos.map((repo, index) => {
+              const key = repo.id ?? repo.full_name
+              const isExpanded = expanded === key
+              return (
+                <FragmentRow
+                  key={key}
+                  repo={repo}
+                  rank={index + 1}
+                  sort={sort}
+                  expanded={isExpanded}
+                  onToggle={() => toggle(repo)}
+                />
+              )
+            })}
+          </tbody>
+        </table>
       </div>
+    </div>
+  )
+}
 
-      <div>
-        <a className="repo-title" href={repo.html_url} target="_blank" rel="noreferrer">
-          {repo.name}
-          <ArrowUpRight size={17} />
-        </a>
-        <p className="repo-description">{repo.description}</p>
-      </div>
+function FragmentRow({ repo, rank, sort, expanded, onToggle }) {
+  function handleKey(event) {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault()
+      onToggle()
+    }
+  }
 
-      <div className="topic-list">
-        {(repo.topics || []).slice(0, 4).map((topic) => <span key={topic}>{topic}</span>)}
-      </div>
-
-      <div className="repo-metrics">
-        <span><Star size={15} /> {formatCompact(repo.stargazers_count)}</span>
-        <span><GitFork size={15} /> {formatCompact(repo.forks_count)}</span>
-        <span><Code2 size={15} /> {repo.language}</span>
-      </div>
-
-      <div className="repo-footer">
-        <span>Updated {relativeDate(repo.updated_at)}</span>
-        <a href={repo.html_url} target="_blank" rel="noreferrer" aria-label={`Open ${repo.full_name} on GitHub`}>
-          GitHub <ExternalLink size={13} />
-        </a>
-      </div>
-    </article>
+  return (
+    <>
+      <tr
+        className={`repo-row ${expanded ? 'expanded' : ''}`}
+        onClick={onToggle}
+        onKeyDown={handleKey}
+        tabIndex={0}
+        aria-expanded={expanded}
+      >
+        <td className="rank-cell">{rank}</td>
+        <td className="repo-cell">
+          <div className="repo-identity">
+            <img src={repo.owner?.avatar_url} alt="" loading="lazy" />
+            <div>
+              <a
+                href={repo.html_url}
+                target="_blank"
+                rel="noreferrer"
+                onClick={(event) => event.stopPropagation()}
+              >
+                {repo.full_name} <ExternalLink size={12} />
+              </a>
+              <span>{repo.topics?.slice(0, 2).join(' · ') || 'GitHub repository'}</span>
+            </div>
+          </div>
+        </td>
+        <td title={exactDate(repo.updated_at)}>{relativeDate(repo.updated_at)}</td>
+        <td><span className="metric"><Star size={13} /> {formatCompact(repo.stargazers_count)}</span></td>
+        <td><span className="metric"><GitFork size={13} /> {formatCompact(repo.forks_count)}</span></td>
+        <td><span className="language-pill">{repo.language}</span></td>
+        <td className="signal-cell">{signalValue(repo, sort)}</td>
+      </tr>
+      {expanded && (
+        <tr className="detail-row">
+          <td colSpan="7">
+            <div className="detail-panel">
+              <div>
+                <strong>Description</strong>
+                <p>{repo.description}</p>
+              </div>
+              <div className="detail-meta">
+                <span>Updated <b>{exactDate(repo.updated_at)}</b></span>
+                <span>Owner <b>{repo.owner?.login || repo.full_name.split('/')[0]}</b></span>
+                <span>Topics <b>{repo.topics?.slice(0, 4).join(', ') || '—'}</b></span>
+              </div>
+            </div>
+          </td>
+        </tr>
+      )}
+    </>
   )
 }
 
@@ -164,6 +249,7 @@ function App() {
   const [status, setStatus] = useState('loading')
   const [source, setSource] = useState('live')
   const [retryNonce, setRetryNonce] = useState(0)
+  const [showChart, setShowChart] = useState(false)
   const requestCounter = useRef(0)
 
   const codeTechnologies = TECHNOLOGIES.filter((item) => item.group === 'code')
@@ -182,7 +268,6 @@ function App() {
     const requestId = ++requestCounter.current
     setStatus('loading')
 
-    // Small debounce avoids spending GitHub Search requests while someone rapidly clicks filters.
     const timer = setTimeout(() => {
       searchRepositories({
         query,
@@ -215,45 +300,33 @@ function App() {
   }
 
   return (
-    <div className="app-shell">
-      <header className="site-header">
-        <a className="brand" href="#top" aria-label="Cloud Repo Radar home">
-          <span className="brand-mark"><GitFork size={22} /></span>
-          <span>
-            <strong>Cloud Repo Radar</strong>
-            <small>Data · BI · Cloud GitHub explorer</small>
-          </span>
-        </a>
-        <a className="source-link" href="https://github.com/julian-passebecq/mostusedcloudrepo" target="_blank" rel="noreferrer">
-          Source <GitFork size={16} />
-        </a>
+    <div className="page-shell" id="top">
+      <header className="starry-header">
+        <div className="header-inner">
+          <a className="brand" href="#top" aria-label="Cloud Repo Radar home">
+            <span className="brand-title">Cloud Repo Radar</span>
+            <span className="brand-subtitle">GitHub rankings for data · BI · cloud</span>
+          </a>
+          <div className="header-actions">
+            <span className={`data-status ${source}`}><CloudStatus source={source} status={status} /></span>
+            <a className="yellow-button" href="https://github.com/julian-passebecq/mostusedcloudrepo" target="_blank" rel="noreferrer">
+              <GitFork size={15} /> GitHub
+            </a>
+          </div>
+        </div>
       </header>
 
-      <main id="top">
-        <section className="hero">
+      <main className="content-shell">
+        <section className="intro-line">
           <div>
-            <span className="hero-kicker">Modern GitHub discovery</span>
-            <h1>Find the repositories that matter for modern data work.</h1>
-            <p>Filter GitHub by content type, language, data library or platform, then compare popularity and activity without digging through generic search results.</p>
-          </div>
-          <div className="hero-note">
-            <Database size={20} />
-            <div>
-              <strong>Popularity, not literal usage</strong>
-              <span>GitHub does not expose a public “most used” metric. Rankings use stars, forks and recency as practical signals.</span>
-            </div>
+            <strong>Rank useful GitHub projects without the generic-search noise.</strong>
+            <span>Stars, forks and recent activity are discovery signals; GitHub does not expose a literal “most used” metric.</span>
           </div>
         </section>
 
-        <section className="filter-panel" aria-label="Repository filters">
-          <div className="filter-block content-block">
-            <div className="filter-title">
-              <span>1</span>
-              <div>
-                <strong>Content type</strong>
-                <small>Choose what kind of GitHub material you want</small>
-              </div>
-            </div>
+        <section className="selector-stack" aria-label="Repository filters">
+          <div className="content-filter">
+            <span className="selector-caption">Content</span>
             <div className="content-ribbon">
               {CONTENT_TYPES.map((item) => {
                 const Icon = contentIcons[item.id]
@@ -263,36 +336,33 @@ function App() {
                     key={item.id}
                     className={contentType === item.id ? 'active' : ''}
                     onClick={() => setContentType(item.id)}
-                    title={item.hint}
                     aria-pressed={contentType === item.id}
+                    title={item.hint}
                   >
-                    <Icon size={16} />
-                    {item.label}
+                    <Icon size={14} /> {item.label}
                   </button>
                 )
               })}
             </div>
           </div>
 
-          <div className="filter-block technology-block">
-            <div className="filter-title">
-              <span>2</span>
-              <div>
-                <strong>Technology</strong>
-                <small>Two rows: code/query/data libraries, then platforms/services</small>
-              </div>
-            </div>
-            <TechnologyRow label="Code, query & libraries" items={codeTechnologies} activeId={technology} onSelect={setTechnology} />
-            <TechnologyRow label="Platforms & services" items={serviceTechnologies} activeId={technology} onSelect={setTechnology} />
-          </div>
+          <TechnologyRow label="Code, query & libraries" items={codeTechnologies} activeId={technology} onSelect={setTechnology} />
+          <TechnologyRow label="Platforms & services" items={serviceTechnologies} activeId={technology} onSelect={setTechnology} />
+        </section>
 
-          <div className="toolbar">
+        <section className="result-toolbar">
+          <div className="current-selection">
+            <span className="mini-label">Selected ranking</span>
+            <h1>{selectedTechnology.label} <span>·</span> {selectedContentType.label}</h1>
+            <p>{searchText ? `Extra filter: “${searchText}”` : selectedContentType.hint}</p>
+          </div>
+          <div className="tools-row">
             <form className="search-box" onSubmit={submitSearch}>
-              <Search size={18} />
+              <Search size={16} />
               <input
                 value={searchDraft}
                 onChange={(event) => setSearchDraft(event.target.value)}
-                placeholder="Add keywords, e.g. medallion, semantic model, ETL…"
+                placeholder="medallion, semantic model, ETL…"
                 aria-label="Additional GitHub search keywords"
               />
               <button type="submit">Search</button>
@@ -303,59 +373,52 @@ function App() {
                 {SORT_OPTIONS.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}
               </select>
             </label>
-          </div>
-        </section>
-
-        <section className="results-header">
-          <div>
-            <span className="eyebrow"><CloudStatus source={source} status={status} /></span>
-            <h2>{selectedTechnology.label} · {selectedContentType.label}</h2>
-            <p>{searchText ? `Extra filter: “${searchText}”` : selectedContentType.hint}</p>
-          </div>
-          <div className="result-count">
-            <strong>{status === 'loading' ? '—' : repos.length}</strong>
-            <span>results loaded</span>
+            <button type="button" className={`chart-toggle ${showChart ? 'active' : ''}`} onClick={() => setShowChart((value) => !value)}>
+              <BarChart3 size={15} /> D3
+            </button>
           </div>
         </section>
 
         {source === 'demo' && status === 'ready' && (
           <div className="notice" role="status">
-            GitHub search is temporarily unavailable or rate-limited. Showing a technology-aware illustrative fallback set; metrics may not be current.{' '}
-            <button type="button" className="source-link" onClick={() => setRetryNonce((value) => value + 1)}>
-              Retry live data <RefreshCw size={13} />
+            GitHub search is unavailable or rate-limited. Showing a technology-aware fallback set; metrics may not be current.
+            <button type="button" onClick={() => setRetryNonce((value) => value + 1)}>
+              <RefreshCw size={13} /> Retry live data
             </button>
           </div>
         )}
 
         {status === 'loading' ? (
-          <div className="loading-state"><RefreshCw size={20} className="spin" /> Loading GitHub repositories…</div>
+          <div className="state-box"><RefreshCw size={20} className="spin" /> Loading GitHub repositories…</div>
         ) : status === 'error' ? (
-          <div className="empty-state">Could not load repositories. Change a filter to retry.</div>
+          <div className="state-box">Could not load repositories. Change a filter to retry.</div>
         ) : repos.length === 0 ? (
-          <div className="empty-state">No repositories matched this combination. Try a broader content type or remove the extra keyword.</div>
+          <div className="state-box">No repositories matched this combination. Broaden the content type or remove the extra keyword.</div>
         ) : (
           <>
-            <PopularityChart repos={repos} />
-            <section className="repo-grid" aria-label="Repository results">
-              {repos.map((repo, index) => <RepoCard key={repo.id ?? repo.full_name} repo={repo} rank={index + 1} />)}
-            </section>
+            <div className="table-meta">
+              <span><b>{repos.length}</b> results loaded</span>
+              <span>Click a row to expand its description</span>
+            </div>
+            <RepoTable repos={repos} sort={sort} />
+            {showChart && <PopularityChart repos={repos} />}
           </>
         )}
       </main>
 
-      <footer>
+      <footer className="site-footer">
         <span>React + Vite + D3 · GitHub REST API</span>
-        <span>No backend required for the public demo</span>
+        <span>Visual direction based on the original StarryLines ranked-table interface</span>
       </footer>
     </div>
   )
 }
 
 function CloudStatus({ source, status }) {
-  if (status === 'loading') return <><RefreshCw size={14} className="spin" /> Loading</>
-  if (source === 'live') return <><Sparkles size={14} /> Live GitHub data</>
-  if (source === 'cache') return <><Database size={14} /> Cached GitHub data</>
-  return <><Database size={14} /> Fallback data</>
+  if (status === 'loading') return <><RefreshCw size={12} className="spin" /> Loading</>
+  if (source === 'live') return <><Sparkles size={12} /> Live</>
+  if (source === 'cache') return <><Database size={12} /> Cached</>
+  return <><Database size={12} /> Fallback</>
 }
 
 export default App
