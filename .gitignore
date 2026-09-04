@@ -1,6 +1,8 @@
-.idea/
-.gradle/
-build/
+node_modules/
+dist/
+.vite/
 .env
-.github/bin
-.run
+.env.*
+!.env.example
+.DS_Store
+*.log

@@ -1,5 +1,0 @@
-.env
-.idea
-*.html
-to_blacklist.txt
-__pycache__
